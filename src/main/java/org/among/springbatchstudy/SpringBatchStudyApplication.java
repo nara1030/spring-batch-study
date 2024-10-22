@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 // 스케쥴링 위해 @EnableScheduling, @EnableBatchProcessing 추가(다만, 스키마 생성이 안 되어 직접 생성)
-@EnableScheduling
-@EnableBatchProcessing
+//@EnableScheduling
+//@EnableBatchProcessing
 @SpringBootApplication
 public class SpringBatchStudyApplication {
 

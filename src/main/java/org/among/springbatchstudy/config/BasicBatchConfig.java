@@ -21,10 +21,10 @@ public class BasicBatchConfig {
     private static Logger logger = LoggerFactory.getLogger(BasicBatchConfig.class);
 
     @Bean
-    public Job basicJob(JobRepository jobRepository, Step step) {
+    public Job basicJob(JobRepository jobRepository, Step basicStep) {
         logger.info("----- Basic Job Execute -----");
         return new JobBuilder("basic-job", jobRepository)
-                .start(step)
+                .start(basicStep)
                 .build();
     }
 
@@ -36,7 +36,7 @@ public class BasicBatchConfig {
      * @return
      */
     @Bean
-    public Step step(JobRepository jobRepository, Tasklet greetingTask, PlatformTransactionManager platformTransactionManager) {
+    public Step basicStep(JobRepository jobRepository, Tasklet greetingTask, PlatformTransactionManager platformTransactionManager) {
         logger.info("----- Basic Step Execute -----");
         return new StepBuilder("basic-step", jobRepository)
                 .tasklet(greetingTask, platformTransactionManager)
