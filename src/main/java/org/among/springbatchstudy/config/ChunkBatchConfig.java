@@ -9,11 +9,13 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +24,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 public class ChunkBatchConfig {
@@ -51,23 +54,45 @@ public class ChunkBatchConfig {
     public Step chunkStep() {
         return new StepBuilder("chunk-step", jobRepository)
                 .<Player, Player> chunk(10, platformTransactionManager) // 제네릭 없으면 에러가 난다?
-                .reader(itemReader())
+                .reader(itemReader2())
                 .processor(itemProcessor())
                 .writer(itemDatabaseWriter())
                 .build();
     }
 
     @Bean
-    public FlatFileItemReader<Player> itemReader() {
+    public FlatFileItemReader<Player> itemReader1() {
         Resource resource = new ClassPathResource("input/player-list.txt");
 
         return new FlatFileItemReaderBuilder<Player>()
                 .name("read-player-list")
-                .encoding("UTF-8")
+                .encoding(StandardCharsets.UTF_8.name())
                 .resource(resource)
                 .delimited().delimiter("|")
                 .names(new String[] {"name", "type", "nationality"})
                 .targetType(Player.class)
+                .build();
+    }
+
+    @Bean
+    public FlatFileItemReader<Player> itemReader2() {
+        Resource resource = new ClassPathResource("input/player-list.txt");
+
+        return new FlatFileItemReaderBuilder<Player>()
+                .name("read-player-list")
+                .encoding(StandardCharsets.UTF_8.name())
+                .resource(resource)
+                .lineMapper(new LineMapper<Player>() {
+                    @Override
+                    public Player mapLine(String line, int lineNumber) throws Exception {
+                        String[] fields = line.split("\\|");
+                        Player player = new Player();
+                        player.setName(fields[0]);
+                        player.setType(fields[1]);
+                        player.setNationality(fields[2]);
+                        return player;
+                    }
+                })
                 .build();
     }
 
@@ -79,20 +104,20 @@ public class ChunkBatchConfig {
         };
     }
 
-//    @Bean
-//    public ItemWriter<Player> itemConsoleWriter() {
-//        return chunk -> {
-//            for (Player player : chunk) {
-//                logger.info("Player written: {} ({})", player, chunk.size());
-//            }
-//        };
-//    }
+    @Bean
+    public ItemWriter<Player> itemConsoleWriter() {
+        return chunk -> {
+            for (Player player : chunk) {
+                logger.info("Player written: {} ({})", player, chunk.size());
+            }
+        };
+    }
 
     @Bean
     public JdbcBatchItemWriter<Player> itemDatabaseWriter() {
         JdbcBatchItemWriter<Player> itemWriter = new JdbcBatchItemWriter<>(); // 빌더 패턴 못 써?
-        itemWriter.setDataSource(dataSource); // yml 파일 설정이 dataSource에 자동 주입돼?
-        itemWriter.setSql("INSERT INTO Players (name, type, nationality) VALUES (:name, :type, :nationality)");
+        itemWriter.setDataSource(dataSource);
+        itemWriter.setSql("INSERT INTO players (name, type, nationality) VALUES (:name, :type, :nationality)");
         itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>());
 
         return itemWriter;
