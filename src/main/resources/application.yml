@@ -16,11 +16,16 @@ spring:
       initialize-schema: always # 내장 DB(H2) 아닌 경우 배치 스키마 생성 필요
     job:
       name: extract-korean-footballer # 부트3부터는 복수 개의 Job이 컨텍스트 내 정의되어 있다면 구동 시 가동시킬 Job 명시 필요
+  sql:
+    init: # 서버 실행시 auto sql 실행
+      schema-locations: classpath:schema.sql
+      mode: always
 #      enabled: false # 부트 기동시 배치 자동 실행 방지
 #  h2:
 #    console:
 #      enabled: true
 #      path: /h2-console
+
 
 logging:
   level:
